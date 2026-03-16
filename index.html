@@ -14,7 +14,7 @@
     tg.ready();
 
     function order(name, price) {
-        fetch('https://symmetrical-space-computing-machine-4j6wqjxxj97rfqqx9-8000.app.github.dev/', {
+        fetch('https://symmetrical-space-computing-machine-4j6wqjxxj97rfqqx9-8000.app.github.dev/api/new_order', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
