@@ -8,21 +8,41 @@
         <button onclick="order('Пепперони', 650)">Заказать</button>
     </div>
 </div>
-
 <script>
+    // 1. ПЕРВЫМ ДЕЛОМ создаем переменную tg
     const tg = window.Telegram.WebApp;
-    tg.ready();
 
+    // 2. СРАЗУ сообщаем, что приложение готово
+    tg.ready();
+    tg.expand();
+
+    // 3. ТОЛЬКО ПОТОМ описываем функции, которые используют tg
     function order(name, price) {
+        // Проверка: если зашли с ПК (не через телеграм), tg.initDataUnsafe может быть пустым
+        const userId = tg.initDataUnsafe?.user?.id || 0; 
+
+        if (userId === 0) {
+            alert("Пожалуйста, откройте приложение через Telegram");
+            return;
+        }
+
         fetch('https://symmetrical-space-computing-machine-4j6wqjxxj97rfqqx9-8000.app.github.dev/api/new_order', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                user_id: tg.initDataUnsafe.user.id,
+                user_id: userId,
                 items: name,
                 total: price
             })
-        });
-        tg.close();
+        })
+        .then(response => {
+            if (response.ok) {
+                tg.close();
+            } else {
+                alert("Ошибка при отправке заказа");
+            }
+        })
+        .catch(err => console.error("Ошибка:", err));
     }
 </script>
+
