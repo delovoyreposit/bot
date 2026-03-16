@@ -1,48 +1,141 @@
-<div id="app">
-    <div class="product">
-        <span>Маргарита — 550₽</span>
-        <button onclick="order('Маргарита', 550)">Заказать</button>
-    </div>
-    <div class="product">
-        <span>Пепперони — 650₽</span>
-        <button onclick="order('Пепперони', 650)">Заказать</button>
-    </div>
-</div>
-<script>
-    // 1. ПЕРВЫМ ДЕЛОМ создаем переменную tg
-    const tg = window.Telegram.WebApp;
-
-    // 2. СРАЗУ сообщаем, что приложение готово
-    tg.ready();
-    tg.expand();
-
-    // 3. ТОЛЬКО ПОТОМ описываем функции, которые используют tg
-    function order(name, price) {
-        // Проверка: если зашли с ПК (не через телеграм), tg.initDataUnsafe может быть пустым
-        const userId = tg.initDataUnsafe?.user?.id || 0; 
-
-        if (userId === 0) {
-            alert("Пожалуйста, откройте приложение через Telegram");
-            return;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoMaker Store</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Использование системных цветов Telegram */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        fetch('https://symmetrical-space-computing-machine-4j6wqjxxj97rfqqx9-8000.app.github.dev/api/new_order', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_id: userId,
-                items: name,
-                total: price
-            })
-        })
-        .then(response => {
-            if (response.ok) {
-                tg.close();
-            } else {
-                alert("Ошибка при отправке заказа");
-            }
-        })
-        .catch(err => console.error("Ошибка:", err));
-    }
-</script>
+        h2 { margin-bottom: 20px; }
 
+        .menu-card {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .price {
+            font-weight: bold;
+            color: var(--tg-theme-link-color, #248bcf);
+        }
+
+        button {
+            background-color: var(--tg-theme-button-color, #50a8eb);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:active { opacity: 0.7; }
+
+        #user-info {
+            font-size: 0.8em;
+            margin-top: 20px;
+            color: var(--tg-theme-hint-color, #999);
+        }
+    </style>
+</head>
+<body>
+
+    <h2>🍕 Наше Меню</h2>
+
+    <div class="menu-card">
+        <div>
+            <div>Пицца Маргарита</div>
+            <div class="price">550 ₽</div>
+        </div>
+        <button onclick="sendOrder('Пицца Маргарита', 550)">Заказать</button>
+    </div>
+
+    <div class="menu-card">
+        <div>
+            <div>Пицца Пепперони</div>
+            <div class="price">650 ₽</div>
+        </div>
+        <button onclick="sendOrder('Пицца Пепперони', 650)">Заказать</button>
+    </div>
+
+    <div class="menu-card">
+        <div>
+            <div>Кола 0.5</div>
+            <div class="price">120 ₽</div>
+        </div>
+        <button onclick="sendOrder('Кола 0.5', 120)">Заказать</button>
+    </div>
+
+    <div id="user-info"></div>
+
+    <script>
+        // Инициализация объекта WebApp через window, чтобы избежать ReferenceError
+        var tg = window.Telegram.WebApp;
+
+        // Сообщаем Telegram, что приложение загружено
+        tg.ready();
+        tg.expand();
+
+        // Отобразим имя пользователя для проверки
+        const user = tg.initDataUnsafe?.user;
+        if (user) {
+            document.getElementById('user-info').innerText = "Заказ для: " + (user.username || user.first_name);
+        }
+
+        function sendOrder(name, price) {
+            // Проверка: запущен ли скрипт в Telegram
+            if (!user) {
+                alert("Пожалуйста, откройте приложение через Telegram бот!");
+                return;
+            }
+
+            // ВАЖНО: Замените URL на ваш актуальный адрес из вкладки PORTS в Codespaces
+            const BACKEND_URL = 'https://symmetrical-space-computing-machine-4j6wqjxxj97rfqqx9-8000.app.github.dev/api/new_order';
+
+            fetch(BACKEND_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.id,
+                    items: name,
+                    total: price
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Закрываем приложение, бот пришлет инвойс в личку
+                    tg.close();
+                } else {
+                    alert("Ошибка сервера. Проверьте, запущен ли main.py и открыт ли порт.");
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка fetch:', error);
+                alert("Не удалось связаться с сервером. Проверьте интернет и статус порта Public в Codespaces.");
+            });
+        }
+    </script>
+</body>
+</html>
